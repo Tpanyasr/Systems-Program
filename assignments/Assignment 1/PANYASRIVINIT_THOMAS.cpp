@@ -182,6 +182,5 @@ int main(int argc, char * argv[])
     
     return 0;
 
-    //I love jenny nguyen and want to be with her forever
 }
 
