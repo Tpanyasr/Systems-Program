@@ -11,7 +11,7 @@ using namespace std;
 
 typedef unsigned char BYTE;
 
-int main()
+int main() 
 {
     
     
