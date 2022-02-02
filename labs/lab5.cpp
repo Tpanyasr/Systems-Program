@@ -61,7 +61,8 @@ int main()
         for(;;)
         {
             sleep(10);
-            cout << T <<endl;
+            printf("Current time %d:%d", tm.tm_hour, tm.tm_min);
+            printdir();
            
         }
         return 0;
@@ -71,7 +72,9 @@ int main()
         for(;;)
         {
             sleep(10);
-            cout << T <<endl;
+            cout <<tm.tm_hour<<endl;
+            cout <<tm.tm_min<<endl;
+            printdir();
         }
         return 0;
     }
