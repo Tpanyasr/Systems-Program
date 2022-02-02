@@ -7,13 +7,13 @@
 #include <vector>
 #include <sys/wait.h>
 using namespace std;
-
+#define PAGESIZE 1024
 typedef unsigned char BYTE;
-
+int heapsize;
 void *startofheap = NULL;
 
 typedef struct chunkhead{
-    unsigned int size;
+    unsigned int size = heapsize;
     unsigned int info = 0;
     unsigned char *next, *prev = NULL;
 }chunkhead;
@@ -83,6 +83,89 @@ BYTE *mymalloc(int size)
 
 return NULL;
 
+}
+
+
+
+BYTE* bestfit(int size)
+{
+
+    chunkhead * cpy = (chunkhead *)startofheap;
+    chunkhead *best = NULL;
+    while(cpy)
+    {
+        if(cpy ->size >= size && cpy->info == 0)
+        {
+            if(cpy->size == size)
+                return (BYTE *)cpy;
+            if(best == NULL)
+                best = cpy;
+            if(best ->size > cpy->size)
+                best = cpy;
+         }
+         else{
+             cpy = (chunkhead *)cpy->next;   
+         }
+         
+    }
+}
+BYTE* mymalloc(int size){
+  
+    chunkhead *cpy = (chunkhead *)startofheap;
+    chunkhead *best = NULL;
+   
+    
+    //if the head is null then initialize the first chunkhead and sbrk
+    if(!cpy){
+        cpy = (chunkhead *)sbrk(size);
+        cpy->size = size;
+        cpy->info = 1;
+        cpy->next = 0; 
+        cpy->prev = 0;
+
+    }
+    //first check how many pages
+    int pages = (size + sizeof(chunkhead))/PAGESIZE;
+    if((size % PAGESIZE)!=PAGESIZE){
+        pages++;
+    }
+    int final_size= (PAGESIZE *pages);
+
+    //find the best fit chunk
+
+
+    while(cpy)
+    {                                    //iterate through all chunks
+        if(cpy->size >= final_size && cpy->info == 0)
+        {     //free space found
+    
+            int remaining = cpy->size-final_size - sizeof(chunkhead);        
+            cpy->size= final_size;                      
+            cpy->info=1;                           //set occupied 
+            if(remaining != 0 && remaining >= size)
+            {                            
+               //address of new chunk = previous address + size of struct + size
+                chunkhead *new_chunk = (chunkhead *)( (unsigned char *) cpy + sizeof(chunkhead) + cpy -> size);
+                new_chunk->size = remaining;
+                new_chunk->info = 0;
+                new_chunk->prev = (unsigned char*) cpy;
+                chunkhead *next = (chunkhead *)new_chunk->next;
+                 if(new_chunk->next){
+                    new_chunk->next = cpy->next;
+                    next->prev = (unsigned char *)new_chunk;
+                }
+                cpy->next = (unsigned char *)new_chunk;     
+            }
+               
+            return (unsigned char*)(cpy + sizeof(chunkhead)); //returns the address of the new memory
+        }
+        else 
+        {                                  
+            cpy = (chunkhead *)cpy->next;                      
+        }
+    }
+    unsigned char * return_address = NULL;    
+    return return_address;                                
 }
 
 void main() 
