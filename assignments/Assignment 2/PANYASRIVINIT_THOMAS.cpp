@@ -7,10 +7,8 @@
 #include <vector>
 #include <sys/wait.h>
 using namespace std;
-#define PAGESIZE 1024
+#define PAGESIZE 4096
 typedef unsigned char BYTE;
-int heapsize = 0;
-chunkhead *startofheap = NULL;
 
 
 typedef struct chunkhead{
@@ -18,6 +16,10 @@ typedef struct chunkhead{
     unsigned int info = 0;
     unsigned char *next, *prev = NULL;
 }chunkhead;
+
+int heapsize = 0;
+chunkhead *startofheap = NULL;
+
 
 chunkhead* get_last_chunk() //you can change it when you aim for performance 
  {   
@@ -37,11 +39,8 @@ chunkhead* get_last_chunk() //you can change it when you aim for performance
     printf("\n--------------------------------------------------------------\n"); 
     if(!startofheap) 
     { 
-        printf("no heap"); 
-    return; 
+        printf("no heap, "); 
  } 
-
-
 
  chunkhead* ch = (chunkhead*)startofheap; 
  for (int no=0; ch; ch = (chunkhead*)ch->next,no++) 
@@ -54,42 +53,26 @@ chunkhead* get_last_chunk() //you can change it when you aim for performance
   printf("      \n"); 
   } 
 printf("program break on address: %x\n",sbrk(0)); 
- } 
+} 
 
-void myfree(BYTE *a)
-{
 
+void myfree(BYTE *address){
+    
+    chunkhead *addr = (chunkhead*)address - sizeof(chunkhead);
+    chunkhead *prev = (chunkhead *)addr->prev;
+    chunkhead *next = (chunkhead *)addr->next;
+   
 }
 
 
-
-chunkhead* bestfit(int size)
-{
-
-    chunkhead * cpy = (chunkhead *)startofheap;
-    chunkhead *best = NULL;
-    while(cpy)
-    {
-        if(cpy ->size >= size && cpy->info == 0)
-        {
-            if(cpy->size == size)
-                return cpy;
-            if(best == NULL)
-                best = cpy;
-            if(best ->size > cpy->size)
-                best = cpy;
-         }
-         else{
-             cpy = (chunkhead *)cpy->next;   
-         }
-         
-    }
-    return best;
-}
 BYTE* mymalloc(int size){
   
-    chunkhead *cpy = (chunkhead *)startofheap;
-    chunkhead *best = NULL;
+    chunkhead *cpy = startofheap;
+    chunkhead *best;
+    chunkhead *current;
+    chunkhead *new_chunk;
+    BYTE *p;
+    int smallest= 0;
    
     
         //first check how many pages
@@ -97,7 +80,7 @@ BYTE* mymalloc(int size){
     if((size % PAGESIZE)!=PAGESIZE){
         pages++;
     }
-    int final_size= (PAGESIZE *pages);
+    size= (PAGESIZE *pages);
 
 
     if(heapsize == 0)
@@ -108,61 +91,76 @@ BYTE* mymalloc(int size){
         cpy->next, cpy->prev = NULL;
         cpy->info = 1;
         cpy->size = size;
+        heapsize = size;
         return (BYTE *)cpy + sizeof(chunkhead);
     }
+    if (cpy->info == 0 && cpy->size == size) //check if startofheap is perfect fit chunk
+    {
+        cpy->info = 1;
+        return (BYTE*)cpy + (sizeof(chunkhead));
+    }
     //find the best fit chunk
-    best = bestfit(size);
-
-    if(best != NULL)
-    {       
-        if(best->size - final_size ==0)
+    while(cpy)
+    {
+        if (cpy->info == 0) //looking for perfect fit unoccupied chunk
         {
-
-            best->info = 1;
-            heapsize += final_size;
-            return (BYTE *)best + sizeof(chunkhead);
+            if (cpy->size == size)
+            {
+                cpy->info = 1;
+                return (BYTE*)cpy + sizeof(chunkhead);
+            }
+            else 
+            {
+                best = (chunkhead*)((BYTE*)cpy + (cpy->size) - size);
+                p = (BYTE*)cpy;
+                smallest = cpy->size;
+            }
         }
-        else
-        {   
+
+        cpy = (chunkhead*)(cpy->next);
+
+    }
+
+    if(smallest)
+    {       
+
 
             //sbreak doesnt need to be used here because we are splitting already allocated memory
-            int remaining = best->size - final_size;  //set up remainder for the second splitted chunk
             //address of new chunk = previous address + size of struct + size
-            chunkhead *new_chunk = (chunkhead *)(BYTE *)(best+ sizeof(chunkhead) + best -> size);            
-            heapsize += final_size;   
-            best->size = final_size;
+            cpy = (chunkhead *)p;
+            cpy->size -= size + sizeof(chunkhead); 
+            new_chunk = (chunkhead*)cpy->next;
+            cpy->info = 0;
+            best->prev = (BYTE*)cpy;
+            best->size = size;
             best->info = 1;
-            best->next = (BYTE *) new_chunk;
-
-            new_chunk->info = 0;
-            new_chunk->size = remaining;
-            new_chunk->prev = (BYTE *)best;
-            new_chunk->next = best->next;
-
+            best->next = (BYTE *)new_chunk;
+            cpy->next = (BYTE *)best;
+            new_chunk->prev = (BYTE *)cpy;
         return (BYTE *)best + sizeof(chunkhead);                          
 
 
-        }
+        
     }
     else //case where a best existing chunkhead could not be found so we must create a new chunkhead and move the program break
     {
-        best = (chunkhead *)sbrk(0);
-        best->info = 1;
-        best->size = final_size;
-        best->prev = (BYTE *)get_last_chunk();
-        best->next = NULL;
-        sbrk(final_size);
-        heapsize += final_size;
-        //create new chunkhead 
-
-
-
+        cpy = startofheap;
+        sbrk(size);
+        heapsize += size + sizeof(chunkhead);
+        new_chunk = cpy;
+        cpy = (chunkhead*)((BYTE*)cpy + cpy->size);
+        cpy->info = 1;
+        cpy->size = size;
+        cpy->next = NULL;
+        cpy->prev = (BYTE*)new_chunk;
+        new_chunk->next = (BYTE*)cpy;
+        return (BYTE*)cpy + sizeof(chunkhead);
     }
-
-        return (BYTE *)best + sizeof(chunkhead);                          
+    return NULL;
 }
 
-void main() 
+
+int main() 
 {
     BYTE*a[100]; 
     analyze();//50% points 
@@ -178,4 +176,5 @@ void main()
     for(int i=90;i<100;i++) 
         myfree(a[i]); 
     analyze();// 25% should be an empty heap now with the start address //from the program start
+    return 0;
 }

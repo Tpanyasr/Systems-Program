@@ -12,9 +12,6 @@
 using namespace std;
 void showstat (char *filepath);
 
-time_t T = time(NULL);
-
-struct tm tm = *localtime(&T);
 
 typedef unsigned char BYTE;
 
@@ -31,8 +28,8 @@ void printdir(){
     {
     for(entry = readdir(dir); entry!= NULL; entry = readdir(dir))
     {
-        cout <<"______________________________________________________________"<<endl;
         cout <<entry->d_name<<endl;
+        cout <<"----------------------------------------"<<endl;
     }
     }
 
@@ -43,31 +40,46 @@ void overwritesig(int i)
 {
     cout << "\nnice try\n" <<endl;
 }
+
+
 int main()
 {
+
+    time_t T = time(NULL);
+
+    struct tm tm = *localtime(&T);
+
+    signal(SIGSTOP, overwritesig);
     signal(SIGINT, overwritesig);
     signal(SIGHUP, overwritesig);
     signal(SIGQUIT, overwritesig);
     signal(SIGTERM, overwritesig);
 
-    int pidparent = getpid();
-    int pidkid = fork();
-    struct stat statstruct;
-    if(pidkid == 0){
-        for(;;)
-        {
-            sleep(10);
-            printf("Current time %d:%d\n", tm.tm_hour, tm.tm_min);
-            printdir();
-           
-        }
-        return 0;
-    }
 
-    cout <<"PID of KID: "<<pidkid<<endl;
-    wait(0);
+    int pidkid;
+    for(;;)
+    {
+        
+        pidkid = fork();
+        if(pidkid == 0)
+        {
+            for(;;)
+            {
+                printf("Current time %d:%d\n\n", tm.tm_hour, tm.tm_min);
+                printdir();
+                sleep(10);
+            }   
+        }
+            
+        else
+        {
+            cout <<"PID of KID: "<<pidkid<<endl;
+            wait(0);
     
-    
+        }
+
+        
+    }
     return 0;
 }
 
