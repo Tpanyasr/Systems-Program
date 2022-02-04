@@ -29,8 +29,9 @@ void printdir(){
     for(entry = readdir(dir); entry!= NULL; entry = readdir(dir))
     {
         cout <<entry->d_name<<endl;
-        cout <<"----------------------------------------"<<endl;
+       
     }
+     cout <<"----------------------------------------"<<endl;
     }
 
 }
@@ -45,10 +46,11 @@ void overwritesig(int i)
 int main()
 {
 
+    int pidparent = getpid();
     time_t T = time(NULL);
 
     struct tm tm = *localtime(&T);
-
+    signal(20, overwritesig);
     signal(SIGSTOP, overwritesig);
     signal(SIGINT, overwritesig);
     signal(SIGHUP, overwritesig);
@@ -74,6 +76,7 @@ int main()
         else
         {
             cout <<"PID of KID: "<<pidkid<<endl;
+            cout <<"PID of Parent: "<<pidparent << endl;
             wait(0);
     
         }
