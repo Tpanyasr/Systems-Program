@@ -11,7 +11,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [ "lion.bmp", "0.5", "1", "out.bmp"
+            "args": [ 
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

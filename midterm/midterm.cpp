@@ -76,156 +76,91 @@ typedef struct tagBITMAPINFOHEADER
 
 
 
-
-BYTE getColor(BYTE *data, int width, int x, int y, int color)
-{
- 
-    unsigned char colreturn;
-    int realwidth = y * width * 3;
-    if (realwidth % 4 != 0){
-        realwidth = realwidth + 4 - (realwidth % 4);
-    }
-
-    colreturn = data[(x * 3) + realwidth + color];
-
-    return colreturn;
-}
-
-
-BYTE *blend(BYTE* idata1, BYTE *idata2, BYTE* idataFinal, tagBITMAPINFOHEADER *fih1,tagBITMAPINFOHEADER *fih2, float ratio, char *infile1, char *infile2)
-{
-
-
-
-    //initialize the merged image's values
-    if(fih1->biWidth ==  fih2->biWidth && fih2->biHeight == fih1->biHeight)
-    {
-        
-       
-        for(int y = 0; y < fih1->biHeight; y++)
-        {
-            int realwidth =  y *fih1->biWidth*3;
-            if(realwidth %4 != 0)
-                realwidth = realwidth + 1 - (realwidth %4);
-            
-            for(int x = 0; x < fih1->biWidth; x++)
-            {
-                
-                
-                //ratio blue
-                
-                BYTE blue1 = getColor(idata1, fih1->biWidth, x, y, BLUE);
-                BYTE blue2 = getColor(idata2, fih2->biWidth, x, y, BLUE);
-                BYTE blue_result = (blue1 *ratio) + (blue2 * (1- ratio));
-                idataFinal[(x*3) + (realwidth) + BLUE] = blue_result;
-               
-                BYTE green1 = getColor(idata1, fih1->biWidth, x, y, GREEN);
-                BYTE green2 = getColor(idata2, fih2->biWidth, x, y, GREEN);
-                BYTE green_result =(green1 *ratio) + (green2 * (1- ratio));
-                idataFinal[(x*3) + (realwidth) + GREEN] = green_result;
-
-                BYTE red1 = getColor(idata1, fih1->biWidth, x, y, RED);
-                BYTE red2 = getColor(idata2, fih2->biWidth, x, y, RED);
-                BYTE red_result =(red1 *ratio) + (red2 * (1- ratio));
-                idataFinal[(x*3) + (realwidth) + RED] = red_result;
-
-            }
-        }
-    
-    
-    }
-    else
-    {
-        printf("\n\nSorry! Bilinear Interpolation has not been added. Choose images of the same size!\n\n");
-
-        exit(EXIT_FAILURE);
-    }
-
-
-    return idataFinal;
-
-    
-
-}
-
-void write(char *output, tagBITMAPFILEHEADER *bfh1, tagBITMAPINFOHEADER *fih1, BYTE*data)
-{
-    FILE *outfile = fopen(output, "wb+");
-    fwrite(&(bfh1->bfType), 2, 1, outfile);
-    fwrite(&(bfh1->bfSize), 4, 1, outfile);
-    fwrite(&(bfh1->bfReserved1), sizeof(short), 1, outfile);
-    fwrite(&(bfh1->bfReserved2), sizeof(short), 1, outfile);
-    fwrite(&(bfh1->bfOffBits), sizeof(int), 1, outfile);
-    fwrite(fih1, sizeof(struct tagBITMAPINFOHEADER), 1, outfile);
-    fwrite(data, fih1->biSizeImage, 1, outfile);
-   
-    fclose(outfile);
-
-}
-
-BYTE * readFile(char * file, BITMAPFILEHEADER *bfh1, BITMAPINFOHEADER *fih1)
-{
-     //OPEN FILE 
-    FILE *file1 = fopen(file, "rb");
-    //READ FILE1
-    fread(&(bfh1->bfType), 2, 1, file1);
-    fread(&(bfh1->bfSize), 4, 1, file1);
-    fread(&(bfh1->bfReserved1), sizeof(short), 1, file1);
-    fread(&(bfh1->bfReserved2), sizeof(short), 1, file1);
-    fread(&(bfh1->bfOffBits), sizeof(int), 1, file1);
-    fread(fih1, sizeof(struct tagBITMAPINFOHEADER), 1, file1);
-    BYTE *idata1 = new BYTE[fih1->biSizeImage];
-    fread(idata1, fih1->biSizeImage, 1, file1);
-    fclose(file1);
-    return idata1;
-
-}
-
 int main(int argc, char * argv[])
 {
 
     FILE *file1 = fopen("compressed.bin", "rb");
-    chunk * chunkp;
     compressedformat * compressed;
-
-    // int width, height; //width and height of the image, with one byte for each color, blue, green and red
-    // int rowbyte_quarter[4];//for parallel algorithms! That’s the location in bytes
-    //                         // which exactly splits the result image after decompression into 4 equal
-    //                         // parts!
-    // int palettecolors;
-    fread(&(compressed->height),sizeof(int), 1, file1);
     fread(&(compressed->width),sizeof(int), 1, file1);
-    fread(&(compressed->palettecolors),sizeof(int), 1, file1);
+    fread(&(compressed->height),sizeof(int), 1, file1);
     fread(&(compressed->rowbyte_quarter),sizeof(int), 4, file1);
-    col *colordata = new col[compressed->palettecolors];
+    fread(&(compressed->palettecolors),sizeof(int), 1, file1);
+    compressed->colors = new col[compressed->palettecolors];
 
     for(int i = 0; i < compressed->palettecolors; i++)
     {
-        fread(&(colordata[i]).r, sizeof(int), 1, file1); 
-        fread(&(colordata[i]).g, sizeof(int), 1, file1); 
-        fread(&(colordata[i]).b, sizeof(int), 1, file1); 
+        fread(&(compressed->colors[i]).r, sizeof(int), 1, file1); 
+        fread(&(compressed->colors[i]).g, sizeof(int), 1, file1); 
+        fread(&(compressed->colors[i]).b, sizeof(int), 1, file1); 
     }
-    compressed->colors = colordata;
+    //chunk *data = (chunk*)malloc(compressed->rowbyte_quarter[3]*sizeof(chunk));
+    chunk *data = new chunk[compressed->rowbyte_quarter[3]];
 
+    int i = 0;
+    //while you can still read in chunk (data is not null), read color index and read count
+    while (fread(&data[i].color_index, sizeof(BYTE), 1, file1) != 0)
+    {
+        fread(&data[i].count, sizeof(short), 1, file1);
+        i ++;
+    }
+    fclose(file1);
 
-    //BYTE *idata1 = new BYTE[fih1->biSizeImage];
+    tagBITMAPFILEHEADER * bfh;
+    bfh->bfType = 19778;
+    bfh->bfSize = 4320054;
+    bfh->bfReserved1 = 0;
+    bfh->bfReserved2 = 0;
+    bfh->bfOffBits = 54;
+
+    tagBITMAPINFOHEADER * fih;
+    fih->biSize = 40;
+    fih->biWidth = 1200;
+    fih->biHeight = 1200;
+    fih->biPlanes = 1;
+    fih->biBitCount = 24;
+    fih->biCompression = 0;
+    fih->biSizeImage = 4320000;
+    fih->biXPelsPerMeter = 3780;
+    fih->biYPelsPerMeter = 3780;
+    fih->biClrUsed = 0;
+    fih->biClrImportant= 0;
+
+    BYTE *idata = new BYTE[fih->biSizeImage];
+
+    
+
+    FILE *outfile = fopen("uncompressed", "wb");
+    fwrite(&(bfh->bfType), 2, 1, outfile);
+    fwrite(&(bfh->bfSize), 4, 1, outfile);
+    fwrite(&(bfh->bfReserved1), sizeof(short), 1, outfile);
+    fwrite(&(bfh->bfReserved2), sizeof(short), 1, outfile);
+    fwrite(&(bfh->bfOffBits), sizeof(int), 1, outfile);
+    fwrite(fih, sizeof(struct tagBITMAPINFOHEADER), 1, outfile);
+    fwrite(data, fih->biSizeImage, 1, outfile);
+
+    // int size = compressed->rowbyte_quarter[3];
+    // chunk * data =  new chunk[size];
+    // int x = 0;
+    // while(fread(&(data[x].color_index), sizeof(BYTE), 1, file1) != 0)
+    // {
+    //     fread(&(data[x].count), sizeof(BYTE), 1, file1);
+    //     x++;
+    // }
+    // printf("%d", x);
     
 
 
 
-    // tagBITMAPFILEHEADER bfh1, bfh2;
-    // tagBITMAPINFOHEADER fih1, fih2;
-    // BYTE *idata1, *idata2;
-    // idata1 = readFile(argv[1], &bfh1, &fih1);
-    // idata2 = readFile(argv[2], &bfh2, &fih2);
-    // BYTE *idataFinal = new BYTE[fih1.biSizeImage];
-    // idataFinal = blend(idata1, idata2, idataFinal, &fih1, &fih2, ratio, argv[1], argv[2]);
-    // write(argv[4], &bfh1, &fih1, idataFinal);
-    // delete(idata1);
-    // delete(idata2);
+
+
+
+    
+    delete[] data;
+    delete[] compressed->colors;
 
     
     return 0;
 
 }
+
 
