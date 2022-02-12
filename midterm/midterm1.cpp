@@ -83,6 +83,11 @@ typedef struct tagBITMAPINFOHEADER
 
 int main(int argc, char * argv[])
 {
+    int z = (1440000*2)/4;
+    int m = (1440000) * (2/4);
+
+    
+
 
     FILE *file1 = fopen("compressed.bin", "rb");
     compressedformat compressed;
@@ -139,7 +144,8 @@ int main(int argc, char * argv[])
 
     //fork
     clock_t a = clock();
-    for(int x = 0; x < fih.biSizeImage/3/2; x++)
+
+    for(int x = 0; x < (fih.biSizeImage/3); x++)
     {
         while(data[idx].count==0)
         {
@@ -148,25 +154,16 @@ int main(int argc, char * argv[])
         idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
         idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
         idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
-        data[idx].count--;           
-        
-    }
-    for(x; x < fih.biSizeImage/3; x++)
-    {
-        while(data[idx].count==0)
+        data[idx].count--; 
+        if(x == fih.biSizeImage/3 -1)
         {
-            idx++;
+            int g = 0;
         }
-        idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
-        idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
-        idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
-        data[idx].count--;           
-        
     }
     a = clock();
     std::cout << "Time for Parallel [With fork]: "<< a <<endl;
 
-    file1 = fopen("finished.bmp", "wb");
+    file1 = fopen("other.bmp", "wb");
     fwrite(&bfh.bfType, 2, 1, file1);
     fwrite(&bfh.bfSize, 4, 1, file1);
     fwrite(&bfh.bfReserved1, 2, 1, file1);

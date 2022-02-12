@@ -136,7 +136,7 @@ int main(int argc, char * argv[])
 
     //fork
     clock_t a = clock();
-    for(x = 0; x < (fih.biSizeImage/3)/2; x++)
+    for(x; x < (fih.biSizeImage/3)/4; x++)
     {
         while(data[idx].count==0)
         {
@@ -148,7 +148,35 @@ int main(int argc, char * argv[])
         data[idx].count--;           
         
     }
-    for(x; x < fih.biSizeImage/3; x++)
+    //x = 360,000, idx = 3332
+    for(x; x < (fih.biSizeImage/3)/2; x++)
+    {
+        while(data[idx].count==0)
+        {
+            idx++;
+        }
+        idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
+        idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
+        idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
+        data[idx].count--;           
+        
+    }
+    //x = 720000, idx = 15653
+    int g = fih.biSizeImage/3;
+    for(x; x < (fih.biSizeImage)/4; x++)
+    {
+        while(data[idx].count==0)
+        {
+            idx++;
+        }
+        idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
+        idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
+        idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
+        data[idx].count--;           
+        
+    }
+    //x = 1080000 idx = 27279
+    for(x; x < (fih.biSizeImage/3); x++)
     {
         while(data[idx].count==0)
         {
