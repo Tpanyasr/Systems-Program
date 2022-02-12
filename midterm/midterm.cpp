@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <iostream>
 #include <string.h>
+#include <string>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <vector>
+#include <sys/wait.h>
 using namespace std;
 #define BLUE 0
 #define GREEN 1
@@ -80,85 +85,85 @@ int main(int argc, char * argv[])
 {
 
     FILE *file1 = fopen("compressed.bin", "rb");
-    compressedformat * compressed;
-    fread(&(compressed->width),sizeof(int), 1, file1);
-    fread(&(compressed->height),sizeof(int), 1, file1);
-    fread(&(compressed->rowbyte_quarter),sizeof(int), 4, file1);
-    fread(&(compressed->palettecolors),sizeof(int), 1, file1);
-    compressed->colors = new col[compressed->palettecolors];
+    compressedformat compressed;
+    fread(&(compressed.width), 4, 1, file1);
+    fread(&(compressed.height),4, 1, file1);
+    fread(&(compressed.rowbyte_quarter),4, 4, file1);
+    fread(&(compressed.palettecolors),4, 1, file1);
+    compressed.colors = new col[compressed.palettecolors];
 
-    for(int i = 0; i < compressed->palettecolors; i++)
+    for(int i = 0; i < compressed.palettecolors; i++)
     {
-        fread(&(compressed->colors[i]).r, sizeof(int), 1, file1); 
-        fread(&(compressed->colors[i]).g, sizeof(int), 1, file1); 
-        fread(&(compressed->colors[i]).b, sizeof(int), 1, file1); 
+        fread(&(compressed.colors[i]).r, 4, 1, file1); 
+        fread(&(compressed.colors[i]).g, 4, 1, file1); 
+        fread(&(compressed.colors[i]).b, 4, 1, file1); 
     }
     //chunk *data = (chunk*)malloc(compressed->rowbyte_quarter[3]*sizeof(chunk));
-    chunk *data = new chunk[compressed->rowbyte_quarter[3]];
+    chunk * data = new chunk[compressed.rowbyte_quarter[3]];
 
     int i = 0;
-    //while you can still read in chunk (data is not null), read color index and read count
-    while (fread(&data[i].color_index, sizeof(BYTE), 1, file1) != 0)
+    //if you can still read in chunk (data is not null), read color index and read count
+    while(1)
     {
-        fread(&data[i].count, sizeof(short), 1, file1);
-        i ++;
+        if(fread(&data[i].color_index, 1, 1, file1))
+        {
+            fread(&data[i].count, 2, 1, file1);
+            i++;
+        }
+        else
+            break;
     }
+    //read in the bmp headers
+    tagBITMAPFILEHEADER bfh;
+    bfh.bfType = 19778;
+    bfh.bfSize = 4320054;
+    bfh.bfReserved1 = 0;
+    bfh.bfReserved2 = 0;
+    bfh.bfOffBits = 54;
+    tagBITMAPINFOHEADER fih;
+    fih.biSize = 40;
+    fih.biWidth = 1200;
+    fih.biHeight = 1200;
+    fih.biPlanes = 1;
+    fih.biBitCount = 24;
+    fih.biCompression = 0;
+    fih.biSizeImage = 4320000;
+    fih.biXPelsPerMeter = 3780;
+    fih.biYPelsPerMeter = 3780;
+    fih.biClrUsed = 0;
+    fih.biClrImportant= 0;
+
+    BYTE *idata = (BYTE *) mmap(NULL, fih.biSizeImage, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    int x = 0;
+    int idx = 0;
+
+    //fork
+    clock_t a = clock();
+    for(int x = 0; x < fih.biSizeImage/3; x++)
+    {
+        while(data[idx].count==0)
+        {
+            idx++;
+        }
+        idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
+        idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
+        idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
+        data[idx].count--;           
+        
+    }
+    a = clock();
+    std::cout << "Time for Parallel [With fork]: "<< a <<endl;
+
+    file1 = fopen("finished.bmp", "wb");
+    fwrite(&bfh.bfType, 2, 1, file1);
+    fwrite(&bfh.bfSize, 4, 1, file1);
+    fwrite(&bfh.bfReserved1, 2, 1, file1);
+    fwrite(&bfh.bfReserved2, 2, 1, file1);
+    fwrite(&bfh.bfOffBits, 4, 1, file1);
+    fwrite(&fih, sizeof(struct tagBITMAPINFOHEADER), 1, file1);
+    fwrite(idata, fih.biSizeImage, 1, file1);
     fclose(file1);
-
-    tagBITMAPFILEHEADER * bfh;
-    bfh->bfType = 19778;
-    bfh->bfSize = 4320054;
-    bfh->bfReserved1 = 0;
-    bfh->bfReserved2 = 0;
-    bfh->bfOffBits = 54;
-
-    tagBITMAPINFOHEADER * fih;
-    fih->biSize = 40;
-    fih->biWidth = 1200;
-    fih->biHeight = 1200;
-    fih->biPlanes = 1;
-    fih->biBitCount = 24;
-    fih->biCompression = 0;
-    fih->biSizeImage = 4320000;
-    fih->biXPelsPerMeter = 3780;
-    fih->biYPelsPerMeter = 3780;
-    fih->biClrUsed = 0;
-    fih->biClrImportant= 0;
-
-    BYTE *idata = new BYTE[fih->biSizeImage];
-
-    
-
-    FILE *outfile = fopen("uncompressed", "wb");
-    fwrite(&(bfh->bfType), 2, 1, outfile);
-    fwrite(&(bfh->bfSize), 4, 1, outfile);
-    fwrite(&(bfh->bfReserved1), sizeof(short), 1, outfile);
-    fwrite(&(bfh->bfReserved2), sizeof(short), 1, outfile);
-    fwrite(&(bfh->bfOffBits), sizeof(int), 1, outfile);
-    fwrite(fih, sizeof(struct tagBITMAPINFOHEADER), 1, outfile);
-    fwrite(data, fih->biSizeImage, 1, outfile);
-
-    // int size = compressed->rowbyte_quarter[3];
-    // chunk * data =  new chunk[size];
-    // int x = 0;
-    // while(fread(&(data[x].color_index), sizeof(BYTE), 1, file1) != 0)
-    // {
-    //     fread(&(data[x].count), sizeof(BYTE), 1, file1);
-    //     x++;
-    // }
-    // printf("%d", x);
-    
-
-
-
-
-
-
-    
-    delete[] data;
-    delete[] compressed->colors;
-
-    
+    //don't forget to delete stuff    
     return 0;
 
 }

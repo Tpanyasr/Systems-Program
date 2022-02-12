@@ -107,7 +107,7 @@ int main()
 
     // decompress in four processes
     col color;
-    int n;
+    int n = 0;
     unsigned long biSizeImagef= fih.biSizeImage;
     unsigned char *data = (unsigned char*)mmap(NULL, biSizeImagef, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, 0, 0);
     for (int x = 0; x < fih.biWidth*fih.biHeight; x ++)

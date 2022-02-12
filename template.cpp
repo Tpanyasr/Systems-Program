@@ -15,6 +15,6 @@ typedef unsigned char BYTE;
 int main()
 {
     
-    
+    int x = 4320000%4; 
     return 0;
 }
