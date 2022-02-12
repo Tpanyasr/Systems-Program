@@ -103,15 +103,12 @@ int main(int argc, char * argv[])
 
     int i = 0;
     //if you can still read in chunk (data is not null), read color index and read count
-    while(1)
+    for(i = 0; i < compressed.rowbyte_quarter[3]/sizeof(chunk); i++)
     {
         if(fread(&data[i].color_index, 1, 1, file1))
         {
             fread(&data[i].count, 2, 1, file1);
-            i++;
         }
-        else
-            break;
     }
     //read in the bmp headers
     tagBITMAPFILEHEADER bfh;
@@ -139,7 +136,19 @@ int main(int argc, char * argv[])
 
     //fork
     clock_t a = clock();
-    for(int x = 0; x < fih.biSizeImage/3; x++)
+    for(x = 0; x < (fih.biSizeImage/3)/2; x++)
+    {
+        while(data[idx].count==0)
+        {
+            idx++;
+        }
+        idata[(x*3) + BLUE] = compressed.colors[data[idx].color_index].b;
+        idata[(x*3) + GREEN] = compressed.colors[data[idx].color_index].g;
+        idata[(x*3) + RED] = compressed.colors[data[idx].color_index].r;
+        data[idx].count--;           
+        
+    }
+    for(x; x < fih.biSizeImage/3; x++)
     {
         while(data[idx].count==0)
         {
