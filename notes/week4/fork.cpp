@@ -20,9 +20,18 @@ int main()
     // at the moment that you create the fork everything in your virtual memory gets copied over 
     if(fork() == 0)//child process
     {
-        cout << "I am the child" << endl;
-        *p = 6;
-        return (0);
+
+        if(fork() == 0)
+        {
+            cout << "I am the grandchild" <<endl;
+            return 0;
+        }
+        else
+        {
+            cout << "I am the child" << endl;
+            *p = 6;
+            return 0;
+        }
 
 
     }
