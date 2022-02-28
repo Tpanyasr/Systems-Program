@@ -31,7 +31,10 @@ int showstat(char *filepath);
 
 void printcwd();
 
-void overwritesig(int i);
+void overwritesig(int i)
+{
+    printf("/n Nice try /n");
+}
 
 
 int main()
@@ -52,9 +55,6 @@ int main()
     
     int childPID;
     int parentPID = getpid();
-    
-    while(1)
-    {
     childPID = fork();
     if(childPID == 0)
     {
@@ -70,6 +70,24 @@ int main()
             printf("\033[0m");
             printf("$ ");
             int waitSecond = 10;
+            // while(1)
+            // {
+            //     if(strcmp(command, "")!=0)
+            //     {
+            //         break;
+            //     }
+            //     sleep(1000);
+            //     --waitSecond;
+            //     if(waitSecond == 0)
+            //     {
+            //         *boolean = 1;
+            //         break;
+            //     }
+            // }
+            // if(waitSecond==0)
+            // {
+            //     return 0;
+            // }
             scanf("%s", command);
             *boolean = 0;
             if(strcmp(command, list)==0)
@@ -81,6 +99,7 @@ int main()
             {
 
                 munmap(boolean, sizeof(int));
+                kill(parentPID, SIGKILL);
                 return 0;
             }
             else
@@ -93,11 +112,51 @@ int main()
     
         }
     }
-    wait(0);
-    sleep(10);
+    else
+    {
+    //check if user entered a command 0 is true 1 is false
+    while(1)
+    {
+        sleep(10);
+        if(*boolean == 1)
+        {
+            kill(childPID, SIGKILL);
+            wait(0);
+            munmap(boolean, sizeof(int));
+            printf("PROCESS KILLED AFTER 10 SECONDS\n");
+            return 0;
+           
+        }
+
     }
-        //check if user entered a command 0 is true 1 is false
         
+    }
+    wait(0);
+    // *
+    // while(1)
+    // {
+    //     if(childPID ==0)
+    //     {
+    //             char *filename = \
+    //             printf("Filename: ");
+    //             scanf("%s", filename);
+    //             if(*filename == "q")
+    //             {
+    //                 return 0;
+    //             }
+    //             else if(*filename = "list")
+    //             {
+    //                 printcwd();
+    //                 return 0;
+    //             }
+    //             else if{
+
+    //             }
+    //         }
+    //         return 0;
+    // }
+
+    // wait(0);
     return 0;
 }
    

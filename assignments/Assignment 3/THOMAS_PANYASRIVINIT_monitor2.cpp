@@ -31,122 +31,77 @@ int showstat(char *filepath);
 
 void printcwd();
 
+void overwritesig(int i)
+{
+
+}
 
 
 int main()
 {
+    signal(20, overwritesig);
+    signal(SIGSTOP, overwritesig);
+    signal(SIGINT, overwritesig);
+    signal(SIGHUP, overwritesig);
+    signal(SIGQUIT, overwritesig);
+    signal(SIGTERM, overwritesig);
     DIR *currDir;
+    int * parentPID;
     char * boolean = (char *)mmap(NULL,sizeof(int), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
     *boolean = 0;
     int ppid = getpid();
     char list[5] = "list";
     char q[2] = "q";
-
-    
     int childPID;
-    int parentPID = getpid();
-    childPID = fork();
-    if(childPID == 0)
-    {
-        while(1)
-        {
-            *boolean = 1;
-            char command[255];
-            printf("\033[0;34m");
-            char workdir[1000];
-            getcwd(workdir, 1000);
-            printf("stat prog .");
-            cout<<workdir;
-            printf("\033[0m");
-            printf("$ ");
-            int waitSecond = 10;
-            // while(1)
-            // {
-            //     if(strcmp(command, "")!=0)
-            //     {
-            //         break;
-            //     }
-            //     sleep(1000);
-            //     --waitSecond;
-            //     if(waitSecond == 0)
-            //     {
-            //         *boolean = 1;
-            //         break;
-            //     }
-            // }
-            // if(waitSecond==0)
-            // {
-            //     return 0;
-            // }
-            scanf("%s", command);
-            *boolean = 0;
-            if(strcmp(command, list)==0)
-            {
-                printcwd();
-
-            }
-            else if(strcmp(command, q) == 0)
-            {
-
-                munmap(boolean, sizeof(int));
-                kill(parentPID, SIGKILL);
-                return 0;
-            }
-            else
-            {
-                int worked = showstat(command);
-
-            }
-            //if a command was entered boolean is true
-            
-    
-        }
-    }
-    else
-    {
-    //check if user entered a command 0 is true 1 is false
+    *parentPID = getpid();
+    cout <<"Parent PID "<<*parentPID<<endl;
     while(1)
     {
-        sleep(10);
-        if(*boolean == 1)
+        childPID = fork();
+        if(childPID == 0)
         {
-            kill(childPID, SIGKILL);
-            wait(0);
-            munmap(boolean, sizeof(int));
-            printf("PROCESS KILLED AFTER 10 SECONDS\n");
-            return 0;
-           
-        }
+            while(1)
+            {
+                *boolean = 1;
+                char command[255];
+                printf("\033[0;34m");
+                char workdir[1000];
+                getcwd(workdir, 1000);
+                printf("stat prog .");
+                cout<<workdir;
+                printf("\033[0m");
+                printf("$ ");
+                int waitSecond = 10;
+                scanf("%s", command);
+                *boolean = 0;
+                if(strcmp(command, list)==0)
+                {
+                    printcwd();
 
-    }
+                }
+                else if(strcmp(command, q) == 0)
+                {
+                    printf("kid was killed.");
+
+                    munmap(boolean, sizeof(int));
+                    return 0;
+                }
+                else
+                {
+                    int worked = showstat(command);
+
+                }
+                //if a command was entered boolean is true
+                
         
+            }
+        }
+        
+        wait(0);
+        sleep(10);
     }
-    wait(0);
-    // *
-    // while(1)
-    // {
-    //     if(childPID ==0)
-    //     {
-    //             char *filename = \
-    //             printf("Filename: ");
-    //             scanf("%s", filename);
-    //             if(*filename == "q")
-    //             {
-    //                 return 0;
-    //             }
-    //             else if(*filename = "list")
-    //             {
-    //                 printcwd();
-    //                 return 0;
-    //             }
-    //             else if{
-
-    //             }
-    //         }
-    //         return 0;
-    // }
-
-    // wait(0);
+        //check if user entered a command 0 is true 1 is false
+        
     return 0;
 }
    
