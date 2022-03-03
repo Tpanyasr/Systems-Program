@@ -24,6 +24,9 @@ int main()
 
     char text[100];
 
+    
+    while(1)
+    {
     int child = fork();
     if(child ==0)
     {
@@ -46,8 +49,6 @@ int main()
 
        printf("%s\n", text);
 
-       printf("restore stdin\n");
-
        dup2(save_stdin, STDIN_FILENO);
        text[0]= 0;
        //scanf("%s", text);
@@ -57,6 +58,7 @@ int main()
        wait(0);
     }
     close(fd[0]);
+    }
     
     return 0;
 }

@@ -1,5 +1,4 @@
 #include <stdio.h>
-// #include <iostream>
 #include <string.h>
 #include <string>
 #include <unistd.h>
@@ -9,6 +8,8 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <iostream>
+
 using namespace std;
 
 typedef unsigned char BYTE;
