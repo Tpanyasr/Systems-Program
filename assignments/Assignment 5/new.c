@@ -147,6 +147,8 @@ int main(int argc, char *argv[])
         {
             par_id= atoi(argv[1]);
             par_count= atoi(argv[2]);
+                    printf("%d", par_id);
+
         // strcpy(shared_mem_matrix,argv[3]);
         }
     if(par_count==1){printf("only one process\n");}
