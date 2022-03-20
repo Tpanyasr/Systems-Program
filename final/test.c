@@ -64,6 +64,7 @@ void quadratic_matrix_multiplication(float *A,float *B,float *C)
 }
 void quadratic_matrix_multiplication_parallel(int par_id, int par_count, float* A, float* B, float* C)
 {
+    printf("parallel id %d\n", par_id);
     // determine how many rows should be worked on (based on number of processes)
     int rows = MATRIX_DIMENSION_XY/par_count;
     // determine where the process should start and end
@@ -88,26 +89,30 @@ void quadratic_matrix_multiplication_parallel(int par_id, int par_count, float* 
                 }
 }
 //************************************************************************************************************************
-void synch(int par_id,int par_count,int *ready) 
-{ 
-int synchid = ready[par_count]+1;  
-ready[par_id]=synchid; 
-int breakout = 0; 
-while(1) 
+void synch(int par_id, int par_count, int *ready)
+{
+    // printf("entered synch id: %d\n", par_id);
+    int synchid = ready[par_count]+1;  
+    ready[par_id]=synchid; 
+    int breakout = 0; 
+    while(1) 
     { 
-    breakout=1;     
-    for(int i=0;i<par_count;i++)  
+        breakout=1;     
+        for(int i=0;i<par_count;i++)  
         { 
-        if(ready[i]<synchid) 
-            {breakout = 0;break;} 
+            if(ready[i]<synchid) 
+            {
+                breakout = 0;
+                break;
+            } 
         } 
-    if(breakout==1) 
+        if(breakout==1) 
         { 
-        ready[par_count] = synchid;        break; 
+            ready[par_count] = synchid;        
+            break; 
         } 
-    } 
-} 
- 
+    }
+}
 //************************************************************************************************************************
 int main(int argc, char *argv[])
 {
@@ -130,10 +135,10 @@ int main(int argc, char *argv[])
     if(par_id == 0)
     {
         //TODO: init the shared memory for A,B,C, ready. shm_open with C_CREAT here! then ftruncate! then mmap
-        fd[0] = shm_open("matrixA", O_RDWR|O_CREAT, 0777);
-        fd[1] = shm_open("matrixB", O_RDWR|O_CREAT, 0777);
-        fd[2] = shm_open("matrixC", O_RDWR|O_CREAT, 0777);
-        fd[3] = shm_open("synchobject", O_RDWR|O_CREAT, 0777);
+        fd[0] = shm_open("matrixA", O_RDWR|O_CREAT, 0600);
+        fd[1] = shm_open("matrixB", O_RDWR|O_CREAT, 0600);
+        fd[2] = shm_open("matrixC", O_RDWR|O_CREAT, 0600);
+        fd[3] = shm_open("synchobject", O_RDWR|O_CREAT, 0600);
 
         ftruncate(fd[0], sizeof(float) * 100);
         ftruncate(fd[1], sizeof(float) * 100);
@@ -143,27 +148,23 @@ int main(int argc, char *argv[])
         A = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[0], 0);
         B = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[1], 0);
         C = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[2], 0);
-        ready = (int*)mmap(0, sizeof(int) *par_count + 1, PROT_READ|PROT_WRITE, MAP_SHARED, fd[3], 0);
-        for(int i = 0; i < par_count+1; i++)
-        {
-            ready[i] = 0;
-        }
+        ready = (int*)mmap(0, sizeof(int)*par_count, PROT_READ|PROT_WRITE, MAP_SHARED, fd[3], 0);
+        memset(ready, 0, sizeof(int)*par_count);
     }
     else
     {
         //TODO: init the shared memory for A,B,C, ready. shm_open withOUT C_CREAT here! NO ftruncate! but yes to mmap
-        sleep(2); //needed for initalizing synch7
+        sleep(2); //needed for initalizing synch
 
-        fd[0] = shm_open("matrixA", O_RDWR, 0777);
-        fd[1] = shm_open("matrixB", O_RDWR, 0777);
-        fd[2] = shm_open("matrixC", O_RDWR, 0777);
-        fd[3] = shm_open("synchobject", O_RDWR, 0777);
+        fd[0] = shm_open("matrixA", O_RDWR, 0600);
+        fd[1] = shm_open("matrixB", O_RDWR, 0600);
+        fd[2] = shm_open("matrixC", O_RDWR, 0600);
+        fd[3] = shm_open("synchobject", O_RDWR, 0600);
 
         A = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[0], 0);
         B = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[1], 0);
         C = (float*)mmap(0, sizeof(float) * 100, PROT_READ|PROT_WRITE, MAP_SHARED, fd[2], 0);
-        ready = (int*)mmap(0, sizeof(int) * par_count + 1, PROT_READ|PROT_WRITE, MAP_SHARED, fd[3], 0);
-
+        ready = (int*)mmap(0, sizeof(int)*par_count, PROT_READ|PROT_WRITE, MAP_SHARED, fd[3], 0);
     }
 
     synch(par_id, par_count, ready);

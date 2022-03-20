@@ -1,28 +1,49 @@
+// Name: Aimee Tan
+// Course: CPE 357, Fall 2021
+// Assignment: Program 5 Part 2 (MPI)
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <sys/wait.h>
-
 
 int main(int argc, char* argv[])
 {
-    int programs = atoi(argv[2]);
-    
-    for(int i = 0; i < programs; i++)
+    // COMMAND LINE = ./program2 program1 N
+    if (argc != 3)
     {
-        char arg1[10];
-        char arg2[10];
-        sprintf(arg1, "%d", i);
-        sprintf(arg2, "%d", programs);
-        char * args_input[] = {argv[1], arg1, arg2, NULL};
-        if(fork() == 0)
+        printf("Incorrect number of arguments!\n");
+        return 0;
+    }
+
+    char* args[4];
+    args[0] = malloc(100);
+    args[1] = malloc(100);
+    args[2] = malloc(100);
+    args[3] = malloc(100);
+
+    // "./program1", "i", "N", NULL
+    strcpy(args[0], argv[1]); // program 1
+    strcpy(args[2], argv[2]); // N
+    args[3] = NULL; // null terminator
+
+    // number of processes as an int
+    int N = atoi(argv[2]);
+
+    for (int i = 0; i < N; i++)
+    {
+        if (fork() == 0)
         {
-            execv(argv[1], args_input);
+            // get the process ID
+            sprintf(args[1], "%d", i);
+            // call program 1
+            execv(args[0], args);
             return 0;
         }
-        
     }
-    wait(NULL);
+
+    wait(0);
     return 0;
 }

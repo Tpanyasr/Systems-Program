@@ -84,19 +84,26 @@ void quadratic_matrix_multiplication_parallel(int par_id, int par_count, float* 
                 }
 }
 //************************************************************************************************************************
-void synch(int par_count,  int par_id, int *ready,int j)
-{   
-    ready[par_id]++;
-    int breakout = 0;
-
-    while(breakout==0)  {
-        breakout=1;
-
-        for(int i=0;i<par_count;i++)  
-            if(ready[i] < j)
-                breakout=0;
-    }
-}
+void synch(int par_id,int par_count,int *ready) 
+{ 
+int synchid = ready[par_count]+1;  
+ready[par_id]=synchid; 
+int breakout = 0; 
+while(1) 
+    { 
+    breakout=1;     
+    for(int i=0;i<par_count;i++)  
+        { 
+        if(ready[i]<synchid) 
+            {breakout = 0;break;} 
+        } 
+    if(breakout==1) 
+        { 
+        ready[par_count] = synchid;        break; 
+        } 
+    } 
+} 
+ 
 //************************************************************************************************************************
 int main(int argc, char *argv[])
 {
@@ -108,6 +115,7 @@ int main(int argc, char *argv[])
     if(argc != 3) {printf("no shared\n");}
     else
     {
+        printf("shared!");
         par_id = atoi(argv[1]);
         par_count = atoi(argv[2]);
         // strcpy(shared_mem_matrix,argv[3]);
@@ -153,7 +161,7 @@ int main(int argc, char *argv[])
         ready = (int*)mmap(0, sizeof(int)*par_count, PROT_READ|PROT_WRITE, MAP_SHARED, fd[3], 0);
     }
     j++;
-    synch(par_id, par_count, ready, j);
+    synch(par_id, par_count, ready);
 
     if(par_id == 0)
     {
@@ -169,12 +177,12 @@ int main(int argc, char *argv[])
         }
     }
     j++;
-    synch(par_id, par_count, ready, j);
+    synch(par_id, par_count*2, ready);
 
     //TODO: quadratic_matrix_multiplication_parallel(par_id, par_count,A,B,C, ...);
 	quadratic_matrix_multiplication_parallel(par_id, par_count, A, B, C);
     j++;
-    synch(par_id, par_count, ready, j);
+    synch(par_id, par_count*3, ready);
 
     if(par_id == 0)
     {
@@ -185,7 +193,7 @@ int main(int argc, char *argv[])
         printf("\n");
     }
     j++;
-    synch(par_id, par_count, ready, j);
+    synch(par_id, par_count*4, ready);
 
     //lets test the result:
     float M[MATRIX_DIMENSION_XY * MATRIX_DIMENSION_XY];

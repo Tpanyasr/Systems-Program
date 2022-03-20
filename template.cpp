@@ -16,6 +16,6 @@ typedef unsigned char BYTE;
 
 int main()
 {
-    
+
     return 0;
 }
