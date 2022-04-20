@@ -46,6 +46,7 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "types.h": "c",
-        "THOMASPANYASRIVINIT_FINAL.C": "cpp"
+        "THOMASPANYASRIVINIT_FINAL.C": "cpp",
+        "wait.h": "c"
     }
 }
